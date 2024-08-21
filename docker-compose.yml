@@ -1,0 +1,55 @@
+services:
+  travel_bot_database:
+    image: postgres:latest
+    restart: always
+    environment:
+      POSTGRES_DB: "travel_bot_database"
+      POSTGRES_USER: "root"
+      POSTGRES_PASSWORD: "root"
+    ports:
+      - "5433:5432"
+    volumes:
+      - database:/var/lib/postgresql/data
+    networks:
+      travel_bot:
+        ipv4_address: 172.32.0.3
+
+  travel_bot_redis:
+    image: "bitnami/redis:latest"
+    ports:
+      - "6379:6379"
+    environment:
+      - REDIS_PASSWORD=very_secret_redis_password
+    volumes:
+      - redis:/bitnami
+    networks:
+      travel_bot:
+        ipv4_address: 172.32.0.4
+
+  travel_bot:
+    build: .
+    depends_on:
+      - travel_bot_database
+      - travel_bot_redis
+    environment:
+      - POSTGRES_CONN=postgresql://secret@travel_bot_database:5432/travel_bot_database
+      - BOT_TOKEN=secret
+      - REDIS_PASSWORD=very_secret_redis_password
+      - WEATHER_API_TOKEN=secret
+      - OPENTRIPMAP_API_TOKEN=secret
+      - RANDOM_SEED=42
+    networks:
+      travel_bot:
+        ipv4_address: 172.32.0.2
+
+volumes:
+  database:
+  redis:
+
+networks:
+  travel_bot:
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.32.0.0/24
+          gateway: 172.32.0.1
